@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mô phỏng Ransomware – Mã độc tống tiền{% endblock %} | SOC Security Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Threat Alert Banner -->
+    <div id="threat-banner" class="threat-alert-banner">
+        <span id="threat-banner-text">🚨 CẢNH BÁO BẢO MẬT: Phát hiện hoạt động mã hóa bất thường trong hệ thống!</span>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="soc-navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.index') }}" class="brand">
+                <span>🛡️ ANM-LAB</span>
+                <span class="brand-badge">RANSOMWARE SIMULATOR</span>
+            </a>
+
+            <ul class="nav-links">
+                <li>
+                    <a href="{{ url_for('main.index') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                        📊 Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('main.attack_lab') }}" class="nav-link {% if active_page == 'attack_lab' %}active{% endif %}">
+                        ⚔️ Lab 1: Tấn công (Mã hóa lai)
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('main.defense_lab') }}" class="nav-link {% if active_page == 'defense_lab' %}active{% endif %}">
+                        🛡️ Lab 2: Phòng thủ & Entropy
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('main.calculator') }}" class="nav-link {% if active_page == 'calculator' %}active{% endif %}">
+                        🧮 Lab 3: Độ bất khả thi Brute-force
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('main.theory') }}" class="nav-link {% if active_page == 'theory' %}active{% endif %}">
+                        📖 Lý thuyết & Framework
+                    </a>
+                </li>
+            </ul>
+
+            <div class="nav-actions">
+                <button onclick="triggerQuickSnapshot()" class="btn btn-cyan btn-sm" title="Tạo bản chụp sạch">
+                    💾 Lưu Snapshot
+                </button>
+                <button onclick="triggerQuickRollback()" class="btn btn-warning btn-sm" title="Khôi phục từ bản sao lưu sạch">
+                    ⏪ Rollback
+                </button>
+                <button onclick="triggerSandboxReset()" class="btn btn-danger btn-sm" title="Khôi phục dữ liệu ban đầu">
+                    🔄 Reset Sandbox
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Universal File Preview Modal -->
+    <div id="preview-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="card-header">
+                <h3 class="card-title" id="preview-filename">Xem trước tệp tin</h3>
+                <span id="preview-badge" class="badge badge-secondary">TEXT</span>
+            </div>
+            <div class="terminal-box" style="max-height: 400px; margin-top: 0.5rem;">
+                <pre id="preview-body" style="white-space: pre-wrap; word-break: break-all;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closePreviewModal()" class="btn btn-outline">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Universal Decrypt Modal -->
+    <div id="decrypt-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="card-header">
+                <h3 class="card-title">🔑 Khôi phục dữ liệu (Nhập RSA Private Key)</h3>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                Tệp tin đã bị mã hóa bằng thuật toán lai <strong>AES-256-GCM + RSA-2048</strong>. Để khôi phục dữ liệu, hãy cung cấp Khóa Riêng Tư (Private Key) tương ứng của kẻ tấn công:
+            </p>
+            <textarea id="modal-decrypt-key" class="terminal-box" style="width: 100%; height: 160px; resize: vertical;" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"></textarea>
+            
+            <div style="margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <button onclick="fillC2PrivateKey()" class="btn btn-cyber btn-sm">📋 Điền nhanh Khóa C2 Thử nghiệm</button>
+            </div>
+
+            <div class="modal-footer">
+                <button onclick="closeDecryptModal()" class="btn btn-outline">Hủy bỏ</button>
+                <button id="btn-confirm-decrypt" onclick="executeFileDecryption()" class="btn btn-cyber">Giải mã tệp</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="soc-footer">
+        <div class="footer-content">
+            <div>
+                <strong>Đồ án môn học:</strong> An Ninh Mạng / An Toàn Thông Tin | 
+                <strong>Đề tài:</strong> Mô phỏng Ransomware – Mã độc tống tiền
+            </div>
+            <div>
+                Môi trường: <span style="color: var(--accent-cyber);">100% Local Sandbox An Toàn</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        let currentDecryptTarget = null;
+
+        function openPreviewModal(filename) {
+            CyberAPI.get(`/api/sandbox/file-preview?filename=${encodeURIComponent(filename)}`).then(res => {
+                if (res.success) {
+                    document.getElementById('preview-filename').innerText = res.filename;
+                    document.getElementById('preview-badge').innerText = res.preview_type.toUpperCase();
+                    document.getElementById('preview-body').innerText = res.preview_content;
+                    document.getElementById('preview-modal').classList.add('active');
+                } else {
+                    showToast(res.error, 'error');
+                }
+            });
+        }
+
+        function closePreviewModal() {
+            document.getElementById('preview-modal').classList.remove('active');
+        }
+
+        function openDecryptModal(filename) {
+            currentDecryptTarget = filename;
+            document.getElementById('decrypt-modal').classList.add('active');
+        }
+
+        function closeDecryptModal() {
+            document.getElementById('decrypt-modal').classList.remove('active');
+            currentDecryptTarget = null;
+        }
+
+        async function fillC2PrivateKey() {
+            const res = await CyberAPI.get('/api/c2/keys');
+            if (res.success) {
+                document.getElementById('modal-decrypt-key').value = res.private_key_pem;
+                showToast('Đã điền Khóa C2 Private Key của phòng lab!', 'info');
+            }
+        }
+
+        async function executeFileDecryption() {
+            const key = document.getElementById('modal-decrypt-key').value.trim();
+            if (!key) {
+                showToast('Vui lòng nhập Private Key!', 'warning');
+                return;
+            }
+
+            if (!currentDecryptTarget) {
+                showToast('Không xác định được tệp cần giải mã!', 'error');
+                return;
+            }
+
+            showToast(`Đang giải mã tệp ${currentDecryptTarget}...`, 'info');
+            const res = await CyberAPI.post('/api/simulate/decrypt-file', {
+                filename: currentDecryptTarget,
+                private_key_pem: key
+            });
+
+            if (res.success) {
+                showToast(`Giải mã thành công! Đã khôi phục: ${res.result.restored_filename}`, 'success');
+                closeDecryptModal();
+                if (window.reloadDashboard) window.reloadDashboard();
+            } else {
+                showToast(`Lỗi giải mã: ${res.error}`, 'error');
+            }
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

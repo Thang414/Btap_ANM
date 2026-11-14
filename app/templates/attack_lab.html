@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Lab 1: Vòng Đời Tấn Công & Mã Hóa Lai{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <span>⚔️ Lab 1: Mô Phỏng Vòng Đời Mã Hóa Lai (Cryptovirology Lifecycle)</span>
+        </h1>
+        <p class="page-subtitle">
+            Khám phá chi tiết kỹ thuật tại sao ransomware hiện đại sử dụng kết hợp <strong>AES-256-GCM</strong> (đối xứng) và <strong>RSA-2048</strong> (bất đối xứng)
+        </p>
+    </div>
+</div>
+
+<!-- Architecture Diagram Card -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📐 Sơ Đồ Cơ Chế Mã Hóa Lai (Hybrid Encryption Architecture)</h2>
+    </div>
+    <div style="background-color: var(--bg-secondary); padding: 1.25rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.7; overflow-x: auto;">
+        <pre style="color: var(--accent-cyber);">
+  [ Tệp gốc Plaintext ] ──> [ Mã hóa AES-256-GCM ] ───────────> [ Ciphertext + Auth Tag ] ──┐
+                                      ▲                                                      │
+                                      │ (Khóa ngẫu nhiên)                                    │
+                              [ Khóa phiên AES-256 ]                                        ├──> [ Tệp .locked ]
+                                      │                                                      │
+                                      ▼                                                      │
+  [ RSA Public Key (C2) ] ──> [ Mã hóa RSA-OAEP ] ───────────> [ Khóa AES bị bọc (256B) ] ──┘
+                                                                           │
+                                                            (Chỉ giải mã được nếu có
+                                                             RSA Private Key của C2!)
+        </pre>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Interactive Execution Sandbox Panel -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">🔬 Thực Nghiệm Từng Bước (Step-by-Step Interactive Runner)</h3>
+            <span class="badge badge-cyan">LAB INTERACTION</span>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">
+                Chọn tệp tin trong Sandbox để thực hiện mô phỏng:
+            </label>
+            <div style="display: flex; gap: 0.5rem;">
+                <select id="select-target-file" class="terminal-box" style="flex: 1; padding: 0.5rem; height: auto;">
+                    <option value="">-- Đang nạp danh sách tệp... --</option>
+                </select>
+                <button onclick="runStepByStepDemo()" class="btn btn-cyber" id="btn-run-demo">
+                    ▶️ Bắt đầu mô phỏng
+                </button>
+            </div>
+        </div>
+
+        <!-- Visual Step Cards -->
+        <div id="steps-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Step 1 -->
+            <div class="card" id="step-1" style="background: var(--bg-secondary); margin-bottom: 0; padding: 1rem; border-left: 4px solid var(--border-bright);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: var(--text-primary);">Bước 1: Đọc tệp nguồn & Tính toán mã băm SHA-256 ban đầu</strong>
+                    <span class="badge badge-secondary" id="badge-step-1">CHỜ</span>
+                </div>
+                <div id="detail-step-1" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; font-family: var(--font-mono);">
+                    Chưa bắt đầu.
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="card" id="step-2" style="background: var(--bg-secondary); margin-bottom: 0; padding: 1rem; border-left: 4px solid var(--border-bright);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: var(--text-primary);">Bước 2: Sinh Khóa đối xứng AES-256 & Nonce 96-bit (Cực nhanh)</strong>
+                    <span class="badge badge-secondary" id="badge-step-2">CHỜ</span>
+                </div>
+                <div id="detail-step-2" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; font-family: var(--font-mono);">
+                    Chưa bắt đầu.
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="card" id="step-3" style="background: var(--bg-secondary); margin-bottom: 0; padding: 1rem; border-left: 4px solid var(--border-bright);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: var(--text-primary);">Bước 3: Mã hóa dữ liệu bằng AES-256-GCM</strong>
+                    <span class="badge badge-secondary" id="badge-step-3">CHỜ</span>
+                </div>
+                <div id="detail-step-3" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; font-family: var(--font-mono);">
+                    Chưa bắt đầu.
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="card" id="step-4" style="background: var(--bg-secondary); margin-bottom: 0; padding: 1rem; border-left: 4px solid var(--border-bright);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: var(--text-primary);">Bước 4: Bọc khóa AES bằng Khóa công khai RSA-2048 (Key Wrapping)</strong>
+                    <span class="badge badge-secondary" id="badge-step-4">CHỜ</span>
+                </div>
+                <div id="detail-step-4" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; font-family: var(--font-mono);">
+                    Chưa bắt đầu.
+                </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="card" id="step-5" style="background: var(--bg-secondary); margin-bottom: 0; padding: 1rem; border-left: 4px solid var(--border-bright);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: var(--text-primary);">Bước 5: Đóng gói tệp .locked & Thả thông điệp tống tiền README_DECRYPT.txt</strong>
+                    <span class="badge badge-secondary" id="badge-step-5">CHỜ</span>
+                </div>
+                <div id="detail-step-5" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; font-family: var(--font-mono);">
+                    Chưa bắt đầu.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- C2 Key Inspector & Ransom Note Preview -->
+    <div>
+        <!-- C2 Key Inspector -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🔑 C2 Master Key Inspector</h3>
+                <span class="badge badge-warning">ATTACKER ASSETS</span>
+            </div>
+            <div style="font-size: 0.82rem; margin-bottom: 0.75rem; color: var(--text-secondary);">
+                Khóa công khai (Public Key) được nhúng sẵn trong mã độc để mã hóa khóa AES. Khóa riêng tư (Private Key) được lưu giữ bí mật trên máy chủ điều khiển C2 của kẻ tấn công:
+            </div>
+
+            <div style="margin-bottom: 0.75rem;">
+                <label style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyber); text-transform: uppercase;">
+                    RSA Public Key (Nhúng trong Payload):
+                </label>
+                <div class="terminal-box" style="height: 110px; font-size: 0.72rem; margin-top: 0.25rem;">
+                    <pre>{{ c2_public_key }}</pre>
+                </div>
+            </div>
+
+            <div>
+                <label style="font-size: 0.75rem; font-weight: 700; color: var(--accent-danger); text-transform: uppercase;">
+                    RSA Private Key (Chỉ C2 Attacker nắm giữ):
+                </label>
+                <div class="terminal-box" style="height: 110px; font-size: 0.72rem; margin-top: 0.25rem;">
+                    <pre>{{ c2_private_key }}</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ransom Note Preview -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📝 Bản Mẫu Tống Tiền (Ransom Note)</h3>
+                <span class="badge badge-danger">EXTORTION NOTE</span>
+            </div>
+            <div class="terminal-box" style="font-size: 0.75rem; color: #ff5f56; line-height: 1.4;">
+                <pre>
+=====================================================
+!!! YOUR FILES HAVE BEEN ENCRYPTED (SIMULATION) !!!
+=====================================================
+Algorithm: AES-256-GCM + RSA-2048 OAEP
+Victim ID: ID-{{ key_fingerprint }}
+C2 Key FP: {{ key_fingerprint }}
+
+Tất cả dữ liệu quan trọng của bạn đã bị phong tỏa.
+Trong đồ án môn học này, không trả bất kỳ khoản tiền nào.
+Sử dụng C2 Private Key trên bảng điều khiển để khôi phục!
+=====================================================
+                </pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function populateSelectFiles() {
+        const res = await CyberAPI.get("/api/sandbox/files");
+        const select = document.getElementById("select-target-file");
+        if (!res.success) return;
+
+        select.innerHTML = "";
+        const cleanFiles = res.files.filter(f => !f.is_locked && !f.is_ransom_note);
+
+        if (cleanFiles.length === 0) {
+            select.innerHTML = "<option value=''>Không có tệp sạch nào (Tất cả đã bị khóa hoặc trống)</option>";
+            return;
+        }
+
+        cleanFiles.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f.name;
+            opt.innerText = `${f.name} (${f.size} bytes)`;
+            select.appendChild(opt);
+        });
+    }
+
+    async function runStepByStepDemo() {
+        const select = document.getElementById("select-target-file");
+        const filename = select.value;
+        if (!filename) {
+            showToast("Vui lòng chọn một tệp hợp lệ!", "warning");
+            return;
+        }
+
+        const btn = document.getElementById("btn-run-demo");
+        btn.disabled = true;
+        btn.innerText = "⏳ Đang thực thi...";
+
+        // Reset steps UI
+        for (let i = 1; i <= 5; i++) {
+            document.getElementById(`step-${i}`).style.borderLeftColor = "var(--border-bright)";
+            document.getElementById(`badge-step-${i}`).className = "badge badge-secondary";
+            document.getElementById(`badge-step-${i}`).innerText = "CHỜ";
+            document.getElementById(`detail-step-${i}`).innerText = "Đang xử lý...";
+        }
+
+        // Animation timing
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        // Step 1: Read plaintext & compute SHA-256
+        document.getElementById("step-1").style.borderLeftColor = "var(--accent-cyber)";
+        document.getElementById("badge-step-1").className = "badge badge-cyan";
+        document.getElementById("badge-step-1").innerText = "ĐANG CHẠY";
+        await sleep(600);
+
+        const res = await CyberAPI.post("/api/simulate/encrypt-file", { filename });
+        if (!res.success) {
+            showToast(`Lỗi: ${res.error}`, "error");
+            btn.disabled = false;
+            btn.innerText = "▶️ Bắt đầu mô phỏng";
+            return;
+        }
+
+        const data = res.result;
+        document.getElementById("badge-step-1").className = "badge badge-success";
+        document.getElementById("badge-step-1").innerText = "HOÀN TẤT";
+        document.getElementById("detail-step-1").innerText = `Đã nạp tệp '${data.original_filename}' (${data.file_size_bytes}B). SHA-256 gốc: ${data.original_sha256}`;
+
+        // Step 2: Ephemeral AES-256 Key
+        await sleep(500);
+        document.getElementById("step-2").style.borderLeftColor = "var(--accent-cyber)";
+        document.getElementById("badge-step-2").className = "badge badge-success";
+        document.getElementById("badge-step-2").innerText = "HOÀN TẤT";
+        document.getElementById("detail-step-2").innerText = `Sinh ngẫu nhiên khóa phiên AES-256 (32 bytes): ${data.aes_session_key_hex}`;
+
+        // Step 3: Symmetric Encryption
+        await sleep(500);
+        document.getElementById("step-3").style.borderLeftColor = "var(--accent-cyber)";
+        document.getElementById("badge-step-3").className = "badge badge-success";
+        document.getElementById("badge-step-3").innerText = "HOÀN TẤT";
+        document.getElementById("detail-step-3").innerText = `Mã hóa dữ liệu với AES-256-GCM xác thực toàn vẹn hoàn tất trong ${data.duration_ms} ms.`;
+
+        // Step 4: Key Wrapping with RSA-2048
+        await sleep(500);
+        document.getElementById("step-4").style.borderLeftColor = "var(--accent-cyber)";
+        document.getElementById("badge-step-4").className = "badge badge-success";
+        document.getElementById("badge-step-4").innerText = "HOÀN TẤT";
+        document.getElementById("detail-step-4").innerText = `Bọc khóa AES bằng C2 RSA-2048 Public Key: ${data.enc_aes_key_preview}`;
+
+        // Step 5: Packaging & Dropping Note
+        await sleep(500);
+        document.getElementById("step-5").style.borderLeftColor = "var(--accent-danger)";
+        document.getElementById("badge-step-5").className = "badge badge-danger";
+        document.getElementById("badge-step-5").innerText = "LOCKED";
+        document.getElementById("detail-step-5").innerText = `Đã xuất tệp '${data.locked_filename}'. Xóa tệp gốc và tạo tệp đòi chuộc README_DECRYPT.txt.`;
+
+        showToast(`Mô phỏng hoàn tất! Tệp ${filename} đã bị khóa an toàn.`, "success");
+        btn.disabled = false;
+        btn.innerText = "▶️ Bắt đầu mô phỏng";
+
+        populateSelectFiles();
+    }
+
+    document.addEventListener("DOMContentLoaded", populateSelectFiles);
+</script>
+{% endblock %}

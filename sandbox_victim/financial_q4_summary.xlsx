@@ -1,0 +1,6 @@
+Quarter,Department,Budget_USD,Actual_USD,Variance_USD
+Q1,Research & Development,450000,420000,+30000
+Q2,Cybersecurity Ops,300000,310000,-10000
+Q3,Cloud Infrastructure,600000,580000,+20000
+Q4,Executive & Legal,250000,240000,+10000
+Total,All Divisions,1600000,1550000,+50000

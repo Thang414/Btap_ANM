@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Quản Trị SOC{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <span>🛡️ Trung Tâm Giám Sát SOC & Điều Khiển Sandbox</span>
+        </h1>
+        <p class="page-subtitle">
+            Theo dõi tính toàn vẹn tập tin, mô phỏng tấn công mã hóa lai và đánh giá cơ chế phòng vệ Blue Team
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <button onclick="triggerEncryptAll()" class="btn btn-danger">
+            ☣️ Mô phỏng Mã hóa Toàn bộ
+        </button>
+        <button onclick="triggerDecryptAll()" class="btn btn-cyber">
+            🔓 Giải mã Hàng loạt
+        </button>
+    </div>
+</div>
+
+<!-- Top Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card" id="card-total-files">
+        <div class="stat-header">
+            <span>Tổng số tệp Sandbox</span>
+            <span>📁</span>
+        </div>
+        <div class="stat-value" id="stat-total-files">0</div>
+        <div class="stat-desc">Thư mục cô lập sandbox_victim/</div>
+    </div>
+
+    <div class="stat-card" id="card-locked-files">
+        <div class="stat-header">
+            <span>Tệp đã bị mã hóa (.locked)</span>
+            <span>🔒</span>
+        </div>
+        <div class="stat-value" id="stat-locked-files">0</div>
+        <div class="stat-desc" id="stat-locked-desc">Hệ thống an toàn</div>
+    </div>
+
+    <div class="stat-card" id="card-entropy">
+        <div class="stat-header">
+            <span>Entropy trung bình</span>
+            <span>📈</span>
+        </div>
+        <div class="stat-value" id="stat-avg-entropy">0.00</div>
+        <div class="stat-desc">Thang đo ngẫu nhiên (Max: 8.0)</div>
+    </div>
+
+    <div class="stat-card" id="card-canary">
+        <div class="stat-header">
+            <span>Bẫy mồi nhử Canary</span>
+            <span>🪤</span>
+        </div>
+        <div class="stat-value" id="stat-canary-status" style="font-size: 1.3rem;">KIỂM TRA...</div>
+        <div class="stat-desc" id="stat-canary-desc">Tripwire cảnh báo sớm</div>
+    </div>
+</div>
+
+<!-- Split View: File Explorer vs Security Telemetry -->
+<div class="dashboard-grid">
+    <!-- Left Column: File Explorer Table -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <span>📂 Trình Khám Phá Tệp Tin Sandbox (Live Explorer)</span>
+            </h2>
+            <div style="display: flex; gap: 0.4rem;">
+                <button onclick="loadFiles()" class="btn btn-outline btn-sm">🔄 Làm mới</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="soc-table">
+                <thead>
+                    <tr>
+                        <th>Tên tệp tin</th>
+                        <th>Kích thước</th>
+                        <th>Trạng thái</th>
+                        <th>Shannon Entropy</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="files-table-body">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            Đang tải dữ liệu tệp tin Sandbox...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Right Column: Security Telemetry & Audit Stream -->
+    <div>
+        <!-- Canary Tripwire Status Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🪤 Tình Trạng Bẫy Mồi Nhử (Canaries)</h3>
+                <span id="canary-overall-badge" class="badge badge-success">ARMED</span>
+            </div>
+            <div id="canary-list-container" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+                <!-- Filled via JS -->
+            </div>
+        </div>
+
+        <!-- Real-time Audit Trail -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📜 Nhật Ký Sự Kiện Bảo Mật (Audit Trail)</h3>
+                <span class="badge badge-secondary" id="log-count-badge">0 sự kiện</span>
+            </div>
+            <div id="audit-log-stream" class="audit-stream">
+                <div style="text-align: center; color: var(--text-muted); padding: 1rem;">
+                    Đang nạp nhật ký kiểm tra...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadFiles() {
+        const res = await CyberAPI.get("/api/sandbox/files");
+        const tbody = document.getElementById("files-table-body");
+        
+        if (!res.success) {
+            tbody.innerHTML = `<tr><td colspan="5" style="color: var(--accent-danger); text-align: center;">Lỗi tải tệp: ${res.error}</td></tr>`;
+            return;
+        }
+
+        document.getElementById("stat-total-files").innerText = res.files_count;
+        document.getElementById("stat-locked-files").innerText = res.locked_count;
+        
+        const lockedCard = document.getElementById("card-locked-files");
+        const lockedDesc = document.getElementById("stat-locked-desc");
+        if (res.locked_count > 0) {
+            lockedCard.classList.add("danger");
+            lockedDesc.innerText = `CẢNH BÁO: ${res.locked_count} tệp đang bị khóa!`;
+        } else {
+            lockedCard.classList.remove("danger");
+            lockedDesc.innerText = "Hệ thống an toàn, chưa bị khóa";
+        }
+
+        if (res.files.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Thư mục sandbox trống. Nhấn nút 'Reset Sandbox' để tạo lại tệp mẫu.</td></tr>`;
+            return;
+        }
+
+        let totalEntropy = 0;
+        let html = "";
+
+        res.files.forEach(f => {
+            totalEntropy += f.entropy;
+            const isLocked = f.is_locked;
+            const isCanary = f.is_canary;
+            const isNote = f.is_ransom_note;
+
+            let statusBadge = "";
+            if (isLocked) {
+                statusBadge = `<span class="badge badge-danger">LOCKED (AES-256)</span>`;
+            } else if (isNote) {
+                statusBadge = `<span class="badge badge-warning">RANSOM NOTE</span>`;
+            } else if (isCanary) {
+                statusBadge = `<span class="badge badge-cyan">CANARY DECOY</span>`;
+            } else {
+                statusBadge = `<span class="badge badge-success">CLEAN DATA</span>`;
+            }
+
+            // Entropy meter fill class
+            let fillClass = "normal";
+            if (f.entropy >= 7.6) fillClass = "high";
+            else if (f.entropy >= 6.0) fillClass = "medium";
+            const fillWidth = Math.min(100, Math.round((f.entropy / 8.0) * 100));
+
+            const formatSize = (bytes) => {
+                if (bytes < 1024) return bytes + " B";
+                return (bytes / 1024).toFixed(1) + " KB";
+            };
+
+            html += `
+                <tr>
+                    <td>
+                        <div class="filename-cell ${isLocked ? 'locked' : ''}">
+                            <span>${isLocked ? '🔒' : (isNote ? '📝' : (isCanary ? '🪤' : '📄'))}</span>
+                            <span>${f.name}</span>
+                        </div>
+                    </td>
+                    <td style="font-family: var(--font-mono); color: var(--text-secondary);">${formatSize(f.size)}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="entropy-meter">
+                            <div class="entropy-fill ${fillClass}" style="width: ${fillWidth}%;"></div>
+                        </div>
+                        <span style="font-family: var(--font-mono); font-size: 0.8rem;">${f.entropy.toFixed(3)}</span>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.3rem;">
+                            <button onclick="openPreviewModal('${f.name}')" class="btn btn-outline btn-sm" title="Xem trước nội dung">
+                                👁️ Xem
+                            </button>
+                            ${isLocked ? `
+                                <button onclick="openDecryptModal('${f.name}')" class="btn btn-cyber btn-sm" title="Khôi phục tệp">
+                                    🔑 Mở khóa
+                                </button>
+                            ` : (!isNote ? `
+                                <button onclick="triggerEncryptSingle('${f.name}')" class="btn btn-danger btn-sm" title="Mô phỏng mã hóa">
+                                    ⚡ Mã hóa
+                                </button>
+                            ` : '')}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+
+        // Update average entropy
+        const avgEntropy = (totalEntropy / res.files.length).toFixed(2);
+        document.getElementById("stat-avg-entropy").innerText = avgEntropy;
+        const entropyCard = document.getElementById("card-entropy");
+        if (avgEntropy >= 7.0) {
+            entropyCard.classList.add("danger");
+        } else {
+            entropyCard.classList.remove("danger");
+        }
+    }
+
+    async function loadCanaryStatus() {
+        const res = await CyberAPI.get("/api/defense/canary-status");
+        if (!res.success) return;
+
+        const statStatus = document.getElementById("stat-canary-status");
+        const statDesc = document.getElementById("stat-canary-desc");
+        const overallBadge = document.getElementById("canary-overall-badge");
+        const container = document.getElementById("canary-list-container");
+        const card = document.getElementById("card-canary");
+
+        if (res.status.any_tripped) {
+            statStatus.innerText = "TRIPPED!";
+            statStatus.style.color = "var(--accent-danger)";
+            statDesc.innerText = "Bẫy đã kích hoạt, phát hiện xâm nhập";
+            overallBadge.className = "badge badge-danger";
+            overallBadge.innerText = "DANGER";
+            card.classList.add("danger");
+        } else {
+            statStatus.innerText = "ARMED (AN TOÀN)";
+            statStatus.style.color = "var(--accent-cyber)";
+            statDesc.innerText = "Tất cả mồi nhử nguyên vẹn";
+            overallBadge.className = "badge badge-success";
+            overallBadge.innerText = "ARMED";
+            card.classList.remove("danger");
+        }
+
+        let html = "";
+        res.status.canaries.forEach(c => {
+            const isTripped = c.is_tripped;
+            html += `
+                <div style="background-color: var(--bg-secondary); padding: 0.6rem; border-radius: 4px; border-left: 3px solid ${isTripped ? 'var(--accent-danger)' : 'var(--accent-cyber)'};">
+                    <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                        <span style="font-family: var(--font-mono); font-size: 0.8rem;">${c.filename}</span>
+                        <span class="badge ${isTripped ? 'badge-danger' : 'badge-success'}">${c.status}</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                        ${c.reason}
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    async function loadAuditLogs() {
+        const res = await CyberAPI.get("/api/audit-logs");
+        if (!res.success) return;
+
+        const stream = document.getElementById("audit-log-stream");
+        document.getElementById("log-count-badge").innerText = `${res.logs.length} sự kiện`;
+
+        if (res.logs.length === 0) {
+            stream.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1rem;">Chưa có sự kiện nào.</div>`;
+            return;
+        }
+
+        let html = "";
+        res.logs.slice(0, 30).forEach(log => {
+            html += `
+                <div class="log-entry ${log.severity}">
+                    <div class="log-meta">
+                        <span>[${log.category}]</span>
+                        <span>${log.timestamp}</span>
+                    </div>
+                    <div class="log-msg">${log.message}</div>
+                </div>
+            `;
+        });
+        stream.innerHTML = html;
+    }
+
+    async function triggerEncryptSingle(filename) {
+        showToast(`Đang thực hiện mã hóa lai trên tệp ${filename}...`, "info");
+        const res = await CyberAPI.post("/api/simulate/encrypt-file", { filename });
+        if (res.success) {
+            showToast(`Mã hóa thành công ${filename} -> .locked!`, "success");
+            window.reloadDashboard();
+        } else {
+            showToast(`Lỗi: ${res.error}`, "error");
+        }
+    }
+
+    async function triggerEncryptAll() {
+        if (!confirm("BẮT ĐẦU MÔ PHỎNG: Mã hóa toàn bộ các tệp tin trong sandbox bằng thuật toán lai AES-256 + RSA-2048?")) {
+            return;
+        }
+        showToast("Đang thực thi mã hóa toàn bộ tệp Sandbox...", "warning");
+        const res = await CyberAPI.post("/api/simulate/encrypt-all");
+        if (res.success) {
+            showToast(`Đã mã hóa ${res.result.total_files_encrypted} tệp tin! Tệp đòi chuộc đã được tạo.`, "success");
+            window.reloadDashboard();
+        } else {
+            showToast(`Lỗi: ${res.error}`, "error");
+        }
+    }
+
+    async function triggerDecryptAll() {
+        const resKey = await CyberAPI.get('/api/c2/keys');
+        const privKey = resKey.private_key_pem;
+
+        showToast("Đang giải mã toàn bộ tệp bằng C2 Private Key...", "info");
+        const res = await CyberAPI.post("/api/simulate/decrypt-all", { private_key_pem: privKey });
+        if (res.success) {
+            showToast(`Khôi phục thành công ${res.result.total_files_decrypted} tệp tin!`, "success");
+            window.reloadDashboard();
+        } else {
+            showToast(`Lỗi giải mã: ${res.error}`, "error");
+        }
+    }
+
+    window.reloadDashboard = function() {
+        loadFiles();
+        loadCanaryStatus();
+        loadAuditLogs();
+        updateThreatBanner();
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        window.reloadDashboard();
+        setInterval(window.reloadDashboard, 6000);
+    });
+</script>
+{% endblock %}

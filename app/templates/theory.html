@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Lý Thuyết & Khung Tham Chiếu An Ninh Mạng{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <span>📖 Cơ Sở Lý Thuyết & Khung Tiêu Chuẩn Quốc Tế</span>
+        </h1>
+        <p class="page-subtitle">
+            Hệ thống hóa kiến thức mật mã học (Cryptovirology), ma trận MITRE ATT&CK và quy trình ứng phó sự cố NIST SP 800-61
+        </p>
+    </div>
+</div>
+
+<!-- Section 1: History & Cryptovirology -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📜 1. Lịch Sử Phát Triển Của Mã Độc Tống Tiền (Cryptovirology)</h2>
+    </div>
+    <div style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.8;">
+        <p style="margin-bottom: 0.75rem;">
+            Khái niệm <strong>Cryptovirology</strong> (Mật mã độc hại) lần đầu tiên được hai nhà khoa học máy tính <strong>Adam L. Young</strong> và <strong>Moti Yung</strong> công bố tại hội nghị <em>IEEE Symposium on Security and Privacy (1996)</em>. Họ đã dự báo chính xác rằng sự kết hợp giữa <strong>mã hóa bất đối xứng (Public-key Cryptography)</strong> và phần mềm độc hại sẽ tạo ra một dạng vũ khí kỹ thuật số mà nạn nhân không thể đảo ngược nếu không có khóa riêng tư từ kẻ tấn công.
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 6px; border-left: 3px solid var(--accent-cyan);">
+                <strong style="color: var(--text-primary);">1989 - AIDS Trojan (PC Cyborg)</strong>
+                <p style="font-size: 0.8rem; margin-top: 0.3rem;">Ransomware đầu tiên trong lịch sử, gửi qua 20,000 đĩa mềm. Dùng mã hóa đối xứng yếu (đổi tên tệp và mã hóa bảng ký tự đơn giản), dễ dàng bị các chuyên gia giải mã.</p>
+            </div>
+            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 6px; border-left: 3px solid var(--accent-warning);">
+                <strong style="color: var(--text-primary);">2013 - Kỷ nguyên CryptoLocker</strong>
+                <p style="font-size: 0.8rem; margin-top: 0.3rem;">Bước ngoặt mang tính cách mạng: Sử dụng mã hóa lai RSA-2048 + AES-256 kết hợp mạng thanh toán ẩn danh Bitcoin và mạng ẩn danh Tor làm kênh C2.</p>
+            </div>
+            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 6px; border-left: 3px solid var(--accent-danger);">
+                <strong style="color: var(--text-primary);">2017 - Đại dịch Toàn cầu WannaCry</strong>
+                <p style="font-size: 0.8rem; margin-top: 0.3rem;">Tích hợp vũ khí mạng EternalBlue (khai thác lỗ hổng giao thức SMBv1), phát tán dưới dạng sâu mạng (Worm) làm tê liệt hàng trăm nghìn bệnh viện và cơ quan chính phủ trên 150 quốc gia.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 2: MITRE ATT&CK Mapping -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">🎯 2. Ánh Xạ Kỹ Thuật Vào Ma Trận MITRE ATT&CK</h2>
+        <span class="badge badge-warning">ENTERPRISE MATRIX</span>
+    </div>
+    <div class="table-responsive">
+        <table class="soc-table">
+            <thead>
+                <tr>
+                    <th>Mã Kỹ Thuật (ID)</th>
+                    <th>Tên Kỹ Thuật (Technique)</th>
+                    <th>Chiến Thuật (Tactic)</th>
+                    <th>Hành Vi Thực Tế Của Ransomware</th>
+                    <th>Giải Pháp Phòng Ngự Của Blue Team</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-family: var(--font-mono); color: var(--accent-danger); font-weight: bold;">T1486</td>
+                    <td><strong>Data Encrypted for Impact</strong></td>
+                    <td>Impact (Tác động)</td>
+                    <td>Sử dụng thuật toán mã hóa lai (AES-256-GCM + RSA-2048) để mã hóa toàn bộ tệp tài liệu của nạn nhân.</td>
+                    <td>Giám sát Shannon Entropy và tốc độ I/O tệp tin; triển khai tệp mồi nhử Canary Tripwires.</td>
+                </tr>
+                <tr>
+                    <td style="font-family: var(--font-mono); color: var(--accent-danger); font-weight: bold;">T1490</td>
+                    <td><strong>Inhibit System Recovery</strong></td>
+                    <td>Impact (Tác động)</td>
+                    <td>Thực thi lệnh <code>vssadmin delete shadows /all /quiet</code> nhằm xóa sạch các bản sao lưu Shadow Copies của Windows.</td>
+                    <td>Thiết lập bản sao lưu bất biến (Immutable Backups / WORM) và lưu trữ ngoại tuyến (Air-gapped).</td>
+                </tr>
+                <tr>
+                    <td style="font-family: var(--font-mono); color: var(--accent-warning); font-weight: bold;">T1083</td>
+                    <td><strong>File and Directory Discovery</strong></td>
+                    <td>Discovery (Khám phá)</td>
+                    <td>Duyệt đệ quy cây thư mục để tìm kiếm các phần mở rộng mục tiêu (.docx, .xlsx, .pdf, .sql).</td>
+                    <td>Giới hạn quyền truy cập theo nguyên tắc tối thiểu (Least Privilege / Zero Trust).</td>
+                </tr>
+                <tr>
+                    <td style="font-family: var(--font-mono); color: var(--accent-warning); font-weight: bold;">T1070.001</td>
+                    <td><strong>Indicator Removal on Host</strong></td>
+                    <td>Defense Evasion</td>
+                    <td>Xóa nhật ký bảo mật hệ thống bằng <code>wevtutil cl Security</code> nhằm cản trở công tác điều tra số (Forensics).</td>
+                    <td>Đẩy nhật ký (Syslog) tức thì về máy chủ SIEM tập trung nằm ngoài tầm kiểm soát của máy nạn nhân.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Section 3: Incident Response Lifecycle -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">🛡️ 3. Quy Trình Ứng Phó Sự Cố (NIST SP 800-61 / SANS Framework)</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 6px; border-top: 3px solid var(--accent-cyber);">
+            <div style="font-size: 0.75rem; color: var(--accent-cyber); font-weight: 700;">GIAI ĐOẠN 1</div>
+            <strong style="display: block; margin: 0.25rem 0; color: #fff;">Chuẩn Bị (Preparation)</strong>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">Thực hiện sao lưu theo quy tắc 3-2-1 (3 bản, 2 phương tiện, 1 bản offline). Phân quyền tối thiểu và đào tạo nhận thức nhân viên.</p>
+        </div>
+
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 6px; border-top: 3px solid var(--accent-cyan);">
+            <div style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">GIAI ĐOẠN 2</div>
+            <strong style="display: block; margin: 0.25rem 0; color: #fff;">Xác Định (Identification)</strong>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">Phát hiện sự bất thường thông qua cảnh báo Canary bẫy tệp, đột biến Entropy hoặc báo cáo từ người dùng.</p>
+        </div>
+
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 6px; border-top: 3px solid var(--accent-danger);">
+            <div style="font-size: 0.75rem; color: var(--accent-danger); font-weight: 700;">GIAI ĐOẠN 3</div>
+            <strong style="display: block; margin: 0.25rem 0; color: #fff;">Ngăn Chặn (Containment)</strong>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">Ngắt kết nối mạng (rút cáp mạng / ngắt Wi-Fi) ngay lập tức để ngăn mã độc lây lan ngang (Lateral Movement) sang máy chủ khác.</p>
+        </div>
+
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 6px; border-top: 3px solid var(--accent-warning);">
+            <div style="font-size: 0.75rem; color: var(--accent-warning); font-weight: 700;">GIAI ĐOẠN 4</div>
+            <strong style="display: block; margin: 0.25rem 0; color: #fff;">Khắc Phục (Recovery)</strong>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">Quét sạch mã độc, cài đặt lại hệ điều hành sạch và phục hồi dữ liệu từ bản sao lưu snapshot bất biến đã kiểm định.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

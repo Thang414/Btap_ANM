@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Lab 2: Cơ Chế Phòng Thủ Blue Team & Shannon Entropy{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <span>🛡️ Lab 2: Cơ Chế Phát Hiện & Phòng Thủ Blue Team</span>
+        </h1>
+        <p class="page-subtitle">
+            Khám phá 3 trụ cột phòng vệ hiện đại: Phân tích Shannon Entropy, Tệp mồi nhử Canary Tripwires và Khôi phục từ Shadow Snapshot
+        </p>
+    </div>
+    <div>
+        <button onclick="runEntropyScan()" class="btn btn-cyber">
+            🔍 Quét Toàn Diện Entropy
+        </button>
+    </div>
+</div>
+
+<!-- Theory Summary Banner -->
+<div class="card" style="border-left: 4px solid var(--accent-cyan);">
+    <h3 style="font-size: 1rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">
+        💡 Bản chất Toán học của Shannon Entropy trong Phát hiện Mã Độc
+    </h3>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+        Công thức Shannon Entropy: \( H(X) = -\sum_{i=1}^{n} P(x_i) \log_2 P(x_i) \). Trong đó, với tệp nhị phân, giá trị nằm trong khoảng từ <strong>0.0 đến 8.0 bits/byte</strong>.<br>
+        • <strong>Văn bản thông thường (Text, Code, SQL):</strong> Dao động từ <strong>3.0 – 5.5</strong> do các ký tự chữ cái và khoảng trắng lặp lại có quy luật.<br>
+        • <strong>Dữ liệu bị mã hóa (AES Ciphertext):</strong> Luôn tiệm cận cực đại <strong>~7.9 – 8.0</strong> vì thuật toán mật mã phân tán ngẫu nhiên đồng đều mọi byte giá trị. Khi hệ thống giám sát phát hiện một tiến trình ghi tệp có entropy tăng vọt lên ~8.0 trên hàng loạt tệp, đó là dấu hiệu chắc chắn của Ransomware!
+    </p>
+</div>
+
+<!-- Grid: Entropy Charts vs Tripwire & Rollback -->
+<div class="dashboard-grid">
+    <!-- Left: Entropy Visualizer -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📊 Biểu Đồ So Sánh Entropy Từng Tệp Tin</h2>
+            <span class="badge badge-cyber" id="avg-entropy-badge">Avg: 0.00</span>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <canvas id="entropy-canvas" width="600" height="260" style="width: 100%; height: 260px; background: var(--bg-secondary); border-radius: 6px;"></canvas>
+        </div>
+
+        <div class="card-header" style="margin-top: 1.5rem;">
+            <h3 class="card-title">📈 Phân Bố Tần Suất Byte (Byte Frequency Histogram - 16 Bins)</h3>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Dữ liệu sạch sẽ có các cột nhảy vọt (ASCII range 32-126). Dữ liệu mã hóa sẽ có 16 cột phẳng đồng đều tuyệt đối:
+        </p>
+        <div style="margin-bottom: 0.5rem;">
+            <canvas id="histogram-canvas" width="600" height="150" style="width: 100%; height: 150px; background: var(--bg-secondary); border-radius: 6px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Right: Canary Tripwire & Snapshot Recovery -->
+    <div>
+        <!-- Canary Tripwire Box -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🪤 Cơ Chế Bẫy Mồi Nhử (Canary Honeypots)</h3>
+                <span class="badge badge-success" id="defense-canary-badge">ARMED</span>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                Ransomware thực tế thường quét tệp theo thứ tự bảng chữ cái. Bằng cách đặt tệp mồi nhử bắt đầu bằng ký tự đặc biệt như <code>!00_CANARY...</code>, mã độc sẽ tấn công tệp này đầu tiên, giúp hệ thống phát hiện và cô lập tiến trình trước khi các tệp thật bị chạm vào.
+            </p>
+            <div id="defense-canary-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Filled via JS -->
+            </div>
+            <div style="margin-top: 1rem;">
+                <button onclick="rearmCanaries()" class="btn btn-outline btn-sm" style="width: 100%;">
+                    🔄 Trồng lại Tệp Mồi Nhử (Re-arm Canaries)
+                </button>
+            </div>
+        </div>
+
+        <!-- Shadow Snapshot & Rollback -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">💾 Bản Chụp Bất Biến (Shadow Snapshot & Rollback)</h3>
+                <span class="badge badge-cyan">RECOVERY</span>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                Một trong những hành vi đầu tiên của ransomware thực tế (như WannaCry, Ryuk) là vô hiệu hóa Volume Shadow Copies (lệnh <code>vssadmin delete shadows</code>). Để chống lại điều này, giải pháp tốt nhất là lưu trữ các bản snapshot bất biến (Immutable Backups) cách ly khỏi tầm can thiệp của người dùng thông thường.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <button onclick="triggerQuickSnapshot()" class="btn btn-cyan">
+                    📸 Chụp Snapshot Sạch Mới (Create Baseline)
+                </button>
+                <button onclick="triggerQuickRollback()" class="btn btn-warning">
+                    ⏪ Phục Hồi Tức Thì từ Snapshot (Rollback)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let scannedFiles = [];
+
+    async function runEntropyScan() {
+        showToast("Đang quét phân tích Shannon Entropy toàn bộ Sandbox...", "info");
+        const res = await CyberAPI.get("/api/defense/entropy-scan");
+        if (!res.success) {
+            showToast(`Lỗi quét: ${res.error}`, "error");
+            return;
+        }
+
+        const rep = res.report;
+        scannedFiles = rep.files;
+        document.getElementById("avg-entropy-badge").innerText = `Avg: ${rep.average_entropy} bits`;
+
+        drawEntropyChart(scannedFiles);
+        if (scannedFiles.length > 0) {
+            // Draw histogram of the first encrypted file or first file
+            const targetFile = scannedFiles.find(f => f.is_locked) || scannedFiles[0];
+            drawHistogramChart(targetFile);
+        }
+
+        showToast(`Đã quét xong ${rep.scanned_files_count} tệp tin!`, "success");
+    }
+
+    function drawEntropyChart(files) {
+        const canvas = document.getElementById("entropy-canvas");
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width;
+        const h = canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+
+        if (!files || files.length === 0) {
+            ctx.fillStyle = "#64748b";
+            ctx.font = "14px monospace";
+            ctx.fillText("Không có tệp tin nào để hiển thị.", 20, h / 2);
+            return;
+        }
+
+        const barWidth = Math.max(12, Math.floor((w - 60) / files.length) - 8);
+        const startX = 40;
+        const baselineY = h - 35;
+        const maxBarH = h - 70;
+
+        // Draw Threshold Line at 7.5 (Ransomware Danger Zone)
+        const thresholdY = baselineY - (7.5 / 8.0) * maxBarH;
+        ctx.strokeStyle = "rgba(255, 56, 96, 0.6)";
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(30, thresholdY);
+        ctx.lineTo(w - 20, thresholdY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "#ff3860";
+        ctx.font = "10px monospace";
+        ctx.fillText("Mã Hóa (7.5)", w - 90, thresholdY - 4);
+
+        // Draw Bars
+        files.forEach((f, idx) => {
+            const x = startX + idx * (barWidth + 8);
+            const barH = (f.entropy / 8.0) * maxBarH;
+            const y = baselineY - barH;
+
+            // Bar Color based on entropy
+            if (f.entropy >= 7.6) {
+                ctx.fillStyle = "#ff3860"; // Danger Red
+            } else if (f.entropy >= 6.0) {
+                ctx.fillStyle = "#ffb800"; // Warning Amber
+            } else {
+                ctx.fillStyle = "#00ff9d"; // Clean Emerald
+            }
+
+            ctx.fillRect(x, y, barWidth, barH);
+
+            // Label
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "9px monospace";
+            const shortName = f.filename.length > 8 ? f.filename.substring(0, 6) + ".." : f.filename;
+            ctx.fillText(shortName, x - 2, h - 15);
+
+            // Entropy value on top of bar
+            ctx.fillStyle = "#ffffff";
+            ctx.fillText(f.entropy.toFixed(1), x, y - 4);
+        });
+    }
+
+    function drawHistogramChart(file) {
+        const canvas = document.getElementById("histogram-canvas");
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width;
+        const h = canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+
+        if (!file || !file.histogram) return;
+
+        const bins = file.histogram;
+        const maxVal = Math.max(...bins, 1);
+        const barWidth = Math.floor((w - 50) / bins.length) - 4;
+        const startX = 30;
+        const baselineY = h - 25;
+        const maxBarH = h - 45;
+
+        // Title
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "11px monospace";
+        ctx.fillText(`Phân bố tệp: ${file.filename} (Entropy: ${file.entropy.toFixed(3)})`, 30, 15);
+
+        bins.forEach((count, i) => {
+            const x = startX + i * (barWidth + 4);
+            const barH = (count / maxVal) * maxBarH;
+            const y = baselineY - barH;
+
+            ctx.fillStyle = file.entropy >= 7.6 ? "rgba(255, 56, 96, 0.7)" : "rgba(0, 229, 255, 0.7)";
+            ctx.fillRect(x, y, barWidth, barH);
+
+            ctx.fillStyle = "#64748b";
+            ctx.font = "8px monospace";
+            ctx.fillText(`b${i}`, x, h - 10);
+        });
+    }
+
+    async function loadCanaryModule() {
+        const res = await CyberAPI.get("/api/defense/canary-status");
+        if (!res.success) return;
+
+        const container = document.getElementById("defense-canary-container");
+        const badge = document.getElementById("defense-canary-badge");
+
+        if (res.status.any_tripped) {
+            badge.className = "badge badge-danger";
+            badge.innerText = "TRIPPED (BỊ XÂM PHẠM)";
+        } else {
+            badge.className = "badge badge-success";
+            badge.innerText = "ARMED (AN TOÀN)";
+        }
+
+        let html = "";
+        res.status.canaries.forEach(c => {
+            html += `
+                <div style="background-color: var(--bg-secondary); padding: 0.6rem; border-radius: 4px; border-left: 3px solid ${c.is_tripped ? 'var(--accent-danger)' : 'var(--accent-cyber)'};">
+                    <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                        <span style="font-family: var(--font-mono); font-size: 0.8rem;">${c.filename}</span>
+                        <span class="badge ${c.is_tripped ? 'badge-danger' : 'badge-success'}">${c.status}</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                        ${c.description} - <em>${c.reason}</em>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    async function rearmCanaries() {
+        showToast("Đang kích hoạt và trồng lại tệp mồi nhử Canary...", "info");
+        await CyberAPI.post("/api/sandbox/reset");
+        await runEntropyScan();
+        await loadCanaryModule();
+        showToast("Đã kích hoạt lại toàn bộ bẫy mồi nhử thành công!", "success");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        runEntropyScan();
+        loadCanaryModule();
+    });
+</script>
+{% endblock %}

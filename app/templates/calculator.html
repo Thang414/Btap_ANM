@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Lab 3: Máy Tính Độ Bất Khả Thi Phá Khóa Brute-Force{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <span>🧮 Lab 3: Độ Bất Khả Thi Của Tấn Công Vét Cạn (Brute-Force Feasibility)</span>
+        </h1>
+        <p class="page-subtitle">
+            Chứng minh bằng toán học tại sao việc giải mã tệp tin bị khóa bằng AES-256/RSA mà không có Private Key là điều bất khả thi trong thực tế
+        </p>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Controls Panel -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">⚙️ Thiết Lập Tham Số Thử Nghiệm</h2>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">
+                1. Chọn Thuật toán & Kích thước Khóa (Cipher Key Space):
+            </label>
+            <select id="cipher-select" onchange="calculateFeasibility()" class="terminal-box" style="width: 100%; height: auto; padding: 0.6rem;">
+                <option value="des_56">DES - 56 bit (Lỗi thời - Đã bị bẻ khóa)</option>
+                <option value="aes_128">AES - 128 bit (Tiêu chuẩn công nghiệp phổ thông)</option>
+                <option value="aes_256" selected>AES - 256 bit (Tiêu chuẩn Ransomware hiện đại - Quân sự)</option>
+                <option value="rsa_2048">RSA - 2048 bit (Phân tích thừa số nguyên tố 617 chữ số)</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">
+                2. Năng lực Phần cứng của Kẻ tấn công (Computational Hashrate):
+            </label>
+            <select id="hardware-select" onchange="calculateFeasibility()" class="terminal-box" style="width: 100%; height: auto; padding: 0.6rem;">
+                <option value="single_gpu">1x Siêu GPU NVIDIA RTX 4090 (~ 10 tỷ khóa / giây - 10^10/s)</option>
+                <option value="cluster_gpu">Cụm 10,000 GPU Đào tiền ảo / Server AI (~ 10^14 khóa / giây)</option>
+                <option value="frontier_super">Siêu máy tính Frontier / Fugaku (~ 10^18 phép tính / giây - ExaFLOP)</option>
+                <option value="all_bitcoin">Toàn bộ mạng lưới Bitcoin toàn cầu (~ 6 x 10^20 hashes / giây)</option>
+                <option value="sci_fi">Giả định viễn tưởng: Toàn bộ năng lượng Trái Đất (~ 10^30 phép tính / giây)</option>
+            </select>
+        </div>
+
+        <div class="card" style="background: var(--bg-secondary); border-left: 4px solid var(--accent-warning); margin-bottom: 0;">
+            <strong style="color: var(--accent-warning); font-size: 0.85rem;">📌 Kết Luận Sư Phạm:</strong>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.3rem;">
+                Các nhóm tội phạm mạng (LockBit, BlackCat, WannaCry) chọn AES-256 vì ngay cả khi toàn bộ máy tính trên hành tinh cùng chạy liên tục hàng tỷ năm cũng không thể vét cạn được không gian khóa. Vì vậy, <strong>sao lưu độc lập (Offline Backups)</strong> là biện pháp cứu cánh duy nhất khi xảy ra sự cố!
+            </p>
+        </div>
+    </div>
+
+    <!-- Output Metrics Panel -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📊 Kết Quả Phân Tích Độ Phức Tạp</h2>
+            <span class="badge badge-cyber" id="metric-status">AN TOÀN TUYỆT ĐỐI</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="stat-card cyber">
+                <div class="stat-header">
+                    <span>Tổng số lượng Khóa khả dĩ (Keyspace Size)</span>
+                    <span>🔢</span>
+                </div>
+                <div class="stat-value" id="res-keyspace" style="font-size: 1.4rem;">2^256</div>
+                <div class="stat-desc" id="res-keyspace-desc">~ 1.15 × 10^77 trường hợp</div>
+            </div>
+
+            <div class="stat-card danger" id="card-time-result">
+                <div class="stat-header">
+                    <span>Thời gian ước tính để bẻ khóa (50% Keyspace)</span>
+                    <span>⏳</span>
+                </div>
+                <div class="stat-value" id="res-time-years" style="font-size: 1.3rem;">> 10^50 Năm</div>
+                <div class="stat-desc" id="res-time-comparison">Gấp hàng tỷ lần tuổi thọ của Vũ trụ (~ 13.8 tỷ năm)</div>
+            </div>
+
+            <div class="terminal-box" style="font-size: 0.78rem;">
+                <div class="terminal-header">
+                    <span class="terminal-dot dot-red"></span>
+                    <span class="terminal-dot dot-yellow"></span>
+                    <span class="terminal-dot dot-green"></span>
+                    <span>so_sanh_thuc_te.log</span>
+                </div>
+                <div id="res-log-summary">
+                    [INFO] Khởi tạo mô hình tính toán vét cạn...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function calculateFeasibility() {
+        const cipher = document.getElementById("cipher-select").value;
+        const hardware = document.getElementById("hardware-select").value;
+
+        let bits = 256;
+        let keyspaceStr = "2^256 ≈ 1.157 × 10^77";
+        let isTrivial = false;
+
+        if (cipher === "des_56") {
+            bits = 56;
+            keyspaceStr = "2^56 ≈ 7.205 × 10^16";
+            isTrivial = true;
+        } else if (cipher === "aes_128") {
+            bits = 128;
+            keyspaceStr = "2^128 ≈ 3.402 × 10^38";
+        } else if (cipher === "aes_256") {
+            bits = 256;
+            keyspaceStr = "2^256 ≈ 1.157 × 10^77";
+        } else if (cipher === "rsa_2048") {
+            bits = 112; // equivalent security strength
+            keyspaceStr = "Tương đương ~ 112-bit security strength (Số nguyên tố 617 chữ số)";
+        }
+
+        // Hardware rates (keys per second)
+        let rate = 1e10; // RTX 4090
+        let hwName = "NVIDIA RTX 4090 (10^10 keys/s)";
+        if (hardware === "cluster_gpu") {
+            rate = 1e14;
+            hwName = "Cụm 10,000 GPU (10^14 keys/s)";
+        } else if (hardware === "frontier_super") {
+            rate = 1e18;
+            hwName = "Siêu máy tính Frontier ExaFLOP (10^18 ops/s)";
+        } else if (hardware === "all_bitcoin") {
+            rate = 6e20;
+            hwName = "Toàn bộ mạng lưới Bitcoin (6 × 10^20 H/s)";
+        } else if (hardware === "sci_fi") {
+            rate = 1e30;
+            hwName = "Toàn bộ năng lượng Trái Đất (10^30 ops/s)";
+        }
+
+        document.getElementById("res-keyspace").innerText = `2^${bits}`;
+        document.getElementById("res-keyspace-desc").innerText = keyspaceStr;
+
+        const secondsPerYear = 365.25 * 24 * 3600;
+
+        let timeStr = "";
+        let comparisonStr = "";
+        let logDetails = "";
+
+        if (cipher === "des_56") {
+            const totalKeys = Math.pow(2, 56) / 2; // average
+            const seconds = totalKeys / rate;
+            if (seconds < 60) {
+                timeStr = `${seconds.toFixed(2)} Giây`;
+            } else if (seconds < 3600) {
+                timeStr = `${(seconds / 60).toFixed(1)} Phút`;
+            } else if (seconds < 86400) {
+                timeStr = `${(seconds / 3600).toFixed(1)} Giờ`;
+            } else {
+                timeStr = `${(seconds / 86400).toFixed(1)} Ngày`;
+            }
+            comparisonStr = "Bị bẻ khóa dễ dàng! DES không còn an toàn từ năm 1999.";
+            document.getElementById("card-time-result").className = "stat-card danger";
+            document.getElementById("metric-status").className = "badge badge-danger";
+            document.getElementById("metric-status").innerText = "LỖ HỔNG NGHIÊM TRỌNG";
+            logDetails = `[CẢNH BÁO] Thuật toán DES 56-bit đã bị phá vỡ hoàn toàn chỉ trong ${timeStr} với ${hwName}.`;
+        } else if (cipher === "aes_128") {
+            timeStr = "> 10^18 Năm";
+            comparisonStr = "Gấp hàng trăm triệu lần tuổi vũ trụ (1.38 × 10^10 năm)";
+            document.getElementById("card-time-result").className = "stat-card cyber";
+            document.getElementById("metric-status").className = "badge badge-success";
+            document.getElementById("metric-status").innerText = "BẤT KHẢ THI VÉT CẠN";
+            logDetails = `[BẢO MẬT] AES-128 đòi hỏi tài nguyên tính toán vượt quá giới hạn vật lý của nền văn minh hiện tại.`;
+        } else if (cipher === "aes_256") {
+            timeStr = "> 10^50 Năm";
+            comparisonStr = "Vượt qua giới hạn entropy của toàn vũ trụ!";
+            document.getElementById("card-time-result").className = "stat-card cyber";
+            document.getElementById("metric-status").className = "badge badge-success";
+            document.getElementById("metric-status").innerText = "BẤT KHẢ THI TUYỆT ĐỐI";
+            logDetails = `[TIÊU CHUẨN RANSOMWARE] AES-256 là lý do các nạn nhân không thể tự khôi phục dữ liệu nếu không có khóa riêng tư hoặc bản sao lưu độc lập.`;
+        } else if (cipher === "rsa_2048") {
+            timeStr = "> 300,000 Năm (Cần Siêu máy tính Lượng tử)";
+            comparisonStr = "Bất khả thi với máy tính cổ điển (Classical Computers)";
+            document.getElementById("card-time-result").className = "stat-card cyber";
+            document.getElementById("metric-status").className = "badge badge-success";
+            document.getElementById("metric-status").innerText = "KHÔNG THỂ PHÂN TÍCH THỪA SỐ";
+            logDetails = `[BẢO VỆ KHÓA PHIÊN] RSA-2048 bảo vệ khóa AES. Kẻ tấn công chỉ giữ Private Key, phía máy tính nạn nhân chỉ có Public Key.`;
+        }
+
+        document.getElementById("res-time-years").innerText = timeStr;
+        document.getElementById("res-time-comparison").innerText = comparisonStr;
+        document.getElementById("res-log-summary").innerText = logDetails;
+    }
+
+    document.addEventListener("DOMContentLoaded", calculateFeasibility);
+</script>
+{% endblock %}

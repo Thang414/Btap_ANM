@@ -1,0 +1,13 @@
+THONG DIEP NOI BO - MAT CHUYEN MON
+Kinh gui: Hoi dong Quan tri & Ban Tong Giam doc
+
+1. Muc tieu nang cap ha tang bao mat quy 4:
+   - Trien khai giai phap giam sat toan ven tap tin (File Integrity Monitoring - FIM).
+   - Cai dat he thong phat hien ma hoa bat thuong dua tren Shannon Entropy.
+   - Bo tri cac tap tin moi nhu (Canary/Honeypot) tren toan bo may chu luu tru.
+
+2. Chinh sach sao luu bat kha bien (Immutable Backups):
+   - Toan bo snapshot du lieu phai duoc luu tren may chu cach ly (Air-gapped).
+   - Thuong xuyen dien tap quy trinh phuc hoi sau tham hoa ma doc tong tien.
+
+Tong Giam Doc ky duyet
