@@ -23,3 +23,4 @@ instance/snapshots/*
 # OS generated
 .DS_Store
 Thumbs.db
+

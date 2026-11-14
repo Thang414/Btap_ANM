@@ -130,3 +130,4 @@ class EntropyEngine:
             "sandbox_status": "COMPROMISED" if encrypted_count > 0 else "SECURE",
             "files": file_reports,
         }
+

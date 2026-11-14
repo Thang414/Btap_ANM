@@ -317,3 +317,4 @@ You can also click '1-Click Sandbox Reset' at any time to restore fresh files.
         note_path = directory / RANSOM_NOTE_NAME
         if not remaining_locked and note_path.exists():
             note_path.unlink()
+

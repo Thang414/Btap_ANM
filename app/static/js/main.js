@@ -120,3 +120,4 @@ async function updateThreatBanner() {
 // Check every 8 seconds
 setInterval(updateThreatBanner, 8000);
 document.addEventListener("DOMContentLoaded", updateThreatBanner);
+

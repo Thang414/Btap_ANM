@@ -54,3 +54,4 @@ def test_snapshot_and_rollback(defense_env):
     res = defense_env.rollback_snapshot("test_snapshot")
     assert res["success"] is True
     assert len(list(SANDBOX_DIR.iterdir())) > 0
+

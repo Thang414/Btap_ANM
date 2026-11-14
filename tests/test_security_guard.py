@@ -30,3 +30,4 @@ def test_root_traversal():
     """Attempts to traverse to filesystem root must be blocked."""
     with pytest.raises(SecurityGuardException):
         validate_sandbox_path("/etc/passwd")
+

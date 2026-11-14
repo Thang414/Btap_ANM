@@ -32,3 +32,4 @@ def create_app() -> Flask:
     app.register_blueprint(api_bp)
 
     return app
+

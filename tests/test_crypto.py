@@ -79,3 +79,4 @@ def test_decrypt_with_wrong_key_fails(crypto_engine, sample_test_file):
 
     with pytest.raises(ValueError, match="Decryption failed"):
         crypto_engine.decrypt_file(locked_path, wrong_pem)
+

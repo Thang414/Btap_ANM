@@ -202,3 +202,4 @@ class DefenseEngine:
             "restored_files_count": restored_count,
             "restored_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
+

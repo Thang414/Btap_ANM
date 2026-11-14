@@ -143,3 +143,4 @@ def reset_sandbox_environment(defense_engine=None) -> Dict[str, Any]:
         "files_created": created_files,
         "total_files": len(created_files) + 2,  # sample files + 2 canaries
     }
+

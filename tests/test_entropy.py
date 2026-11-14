@@ -34,3 +34,4 @@ def test_byte_histogram_length():
     hist = EntropyEngine.get_byte_histogram(data, bins=16)
     assert len(hist) == 16
     assert sum(hist) == 100
+

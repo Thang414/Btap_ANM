@@ -308,3 +308,4 @@ def get_audit_logs():
         "success": True,
         "logs": defense.get_audit_logs(limit=100),
     })
+

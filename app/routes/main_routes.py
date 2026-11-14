@@ -53,3 +53,4 @@ def calculator():
 def theory():
     """Theory Guide: Cryptovirology, Hybrid Encryption, MITRE ATT&CK T1486, Incident Response."""
     return render_template("theory.html", active_page="theory")
+

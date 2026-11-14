@@ -71,3 +71,4 @@ def test_api_reset_sandbox(client):
     assert res.status_code == 200
     data = res.get_json()
     assert data["success"] is True
+
